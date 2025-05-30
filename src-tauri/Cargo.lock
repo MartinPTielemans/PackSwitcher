@@ -2347,6 +2347,7 @@ dependencies = [
  "tauri-nspanel",
  "tauri-plugin-shell",
  "tauri-plugin-updater",
+ "tokio",
 ]
 
 [[package]]

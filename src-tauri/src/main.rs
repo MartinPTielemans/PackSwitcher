@@ -5,7 +5,9 @@ mod command;
 mod fns;
 mod tray;
 
+use std::time::Duration;
 use tauri::{Emitter, Manager};
+use tokio;
 
 fn main() {
     tauri::Builder::default()
@@ -34,6 +36,19 @@ fn main() {
             tauri::async_runtime::spawn(async move {
                 if let Err(e) = check_for_updates_internal(app_handle_clone).await {
                     eprintln!("Failed to check for updates: {}", e);
+                }
+            });
+
+            // Start periodic update checker (every hour)
+            let app_handle_periodic = app_handle.clone();
+            tauri::async_runtime::spawn(async move {
+                loop {
+                    // Wait 1 hour (3600 seconds) - non-blocking async sleep
+                    tokio::time::sleep(Duration::from_secs(300)).await;
+
+                    if let Err(e) = check_for_updates_internal(app_handle_periodic.clone()).await {
+                        eprintln!("Periodic update check failed: {}", e);
+                    }
                 }
             });
 
