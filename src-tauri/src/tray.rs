@@ -17,7 +17,7 @@ pub fn create(app_handle: &AppHandle) -> tauri::Result<TrayIcon> {
             let app_handle = tray.app_handle();
 
             if let TrayIconEvent::Click { button_state, .. } = event {
-                if button_state == MouseButtonState::Up {
+                if button_state == MouseButtonState::Down {
                     let panel = app_handle.get_webview_panel("main").unwrap();
 
                     if panel.is_visible() {
