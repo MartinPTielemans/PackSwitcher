@@ -31,13 +31,13 @@ A macOS menubar app that automatically translates package manager commands betwe
 
 ### Download
 
-Download the latest release from the [Releases page](https://github.com/yourusername/packswitcher/releases).
+Download the latest release from the [Releases page](https://github.com/MartinPTielemans/packswitcher/releases).
 
 ### Build from Source
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/packswitcher.git
+   git clone https://github.com/MartinPTielemans/packswitcher.git
    cd packswitcher
    ```
 
