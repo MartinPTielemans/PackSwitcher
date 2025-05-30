@@ -19,7 +19,15 @@
   "productName": "PackSwitcher",
   "version": "1.0.0",
   "identifier": "com.packswitcher.app",
-  "plugins": {},
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://github.com/MartinPTielemans/packswitcher/releases/latest/download/latest.json"
+      ],
+      "dialog": true,
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEUwRDRCRTIwQzgyNTM3N0MKUldSOE55WElJTDdVNE5RcmFRWHlma1podHh0TXE1RU9qSmlHYUFkQkdIb293eTRTWk1tbU5LY3MK"
+    }
+  },
   "app": {
     "windows": [
       {

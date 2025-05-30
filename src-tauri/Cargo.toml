@@ -14,6 +14,7 @@ tauri-build = { version = "2.0", features = [] }
 
 [dependencies]
 tauri = { version = "2.1", features = ["macos-private-api", "tray-icon", "image-png"] }
+tauri-plugin-updater = "2.0"
 tauri-nspanel = { git = "https://github.com/ahkohd/tauri-nspanel", branch = "v2" }
 monitor = { git = "https://github.com/ahkohd/tauri-toolkit", branch = "v2" }
 serde = { version = "1", features = ["derive"] }
