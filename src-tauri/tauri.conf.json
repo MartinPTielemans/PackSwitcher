@@ -18,7 +18,7 @@
     ]
   },
   "productName": "PackSwitcher",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "identifier": "com.packswitcher.app",
   "plugins": {
     "updater": {
