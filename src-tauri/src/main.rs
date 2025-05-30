@@ -79,18 +79,39 @@ async fn install_update(app: tauri::AppHandle) -> Result<(), String> {
         .map_err(|e| e.to_string())?;
 
     if let Some(update) = update {
+        let mut downloaded = 0u64;
+
         update
             .download_and_install(
-                |_chunk_length, _content_length| {
-                    // Progress callback - could emit progress events here if needed
+                |chunk_length, content_length| {
+                    downloaded += chunk_length as u64;
+
+                    // Emit progress event to frontend
+                    if let Err(e) = app.emit(
+                        "update-progress",
+                        serde_json::json!({
+                            "downloaded": downloaded,
+                            "contentLength": content_length.unwrap_or(0)
+                        }),
+                    ) {
+                        eprintln!("Failed to emit progress event: {}", e);
+                    }
                 },
                 || {
                     // Download finished callback
                     println!("Update downloaded and installed successfully");
+
+                    // Emit finished event to frontend
+                    if let Err(e) = app.emit("update-finished", ()) {
+                        eprintln!("Failed to emit finished event: {}", e);
+                    }
                 },
             )
             .await
             .map_err(|e| e.to_string())?;
+
+        // Restart the app after successful installation
+        app.restart();
     }
 
     Ok(())

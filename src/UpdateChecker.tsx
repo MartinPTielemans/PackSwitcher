@@ -6,24 +6,47 @@ interface UpdateInfo {
   version: string;
 }
 
+interface DownloadProgress {
+  downloaded: number;
+  contentLength: number;
+  percentage: number;
+}
+
 export function UpdateChecker() {
   const [updateAvailable, setUpdateAvailable] = useState<UpdateInfo | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
   const [showDialog, setShowDialog] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState<DownloadProgress | null>(null);
 
   useEffect(() => {
     // Listen for update events from the backend
-    const unlisten = listen<string>('update-available', (event) => {
-      setUpdateAvailable({ version: event.payload });
-      setShowDialog(true);
-    });
+    const setupListeners = async () => {
+      const unlistenUpdate = listen<string>('update-available', (event) => {
+        setUpdateAvailable({ version: event.payload });
+        setShowDialog(true);
+      });
+
+      const unlistenProgress = listen<{ downloaded: number; contentLength: number }>('update-progress', (event) => {
+        const { downloaded, contentLength } = event.payload;
+        const percentage = contentLength > 0 ? Math.round((downloaded / contentLength) * 100) : 0;
+        setDownloadProgress({ downloaded, contentLength, percentage });
+      });
+
+      const unlistenFinished = listen('update-finished', () => {
+        console.log('Update installation finished');
+      });
+
+      return async () => {
+        (await unlistenUpdate)();
+        (await unlistenProgress)();
+        (await unlistenFinished)();
+      };
+    };
+
+    setupListeners();
 
     // Check for updates on component mount
     checkForUpdates();
-
-    return () => {
-      unlisten.then(fn => fn());
-    };
   }, []);
 
   const checkForUpdates = async () => {
@@ -38,11 +61,12 @@ export function UpdateChecker() {
     try {
       setIsUpdating(true);
       setShowDialog(false);
+      setDownloadProgress({ downloaded: 0, contentLength: 0, percentage: 0 });
       await invoke('install_update');
-      // The app will restart automatically after installation
     } catch (error) {
       console.error('Failed to update:', error);
       setIsUpdating(false);
+      setDownloadProgress(null);
     }
   };
 
@@ -66,29 +90,51 @@ export function UpdateChecker() {
         zIndex: 1000
       }}>
         <div style={{
-          backgroundColor: 'white',
-          padding: '20px',
+          backgroundColor: '#1e1e1e',
+          padding: '15px',
           borderRadius: '8px',
           textAlign: 'center',
-          maxWidth: '300px'
+          width: '280px',
+          maxHeight: '200px',
+          border: '1px solid #2d2d2d',
+          color: '#ffffff'
         }}>
-          <h3>Updating...</h3>
-          <p>Please wait while the application updates. The app will restart automatically.</p>
-          <div style={{ marginTop: '10px' }}>
+          <h3 style={{ margin: '0 0 8px 0', color: '#ffffff', fontSize: '16px' }}>Updating...</h3>
+          <p style={{ color: '#e0e0e0', margin: '0 0 12px 0', fontSize: '12px', lineHeight: '1.4' }}>
+            {downloadProgress?.percentage === 100 
+              ? 'Installing update...' 
+              : 'Downloading update...'}
+          </p>
+          <div style={{ marginTop: '8px' }}>
             <div style={{
               width: '100%',
               height: '4px',
-              backgroundColor: '#e0e0e0',
+              backgroundColor: '#2d2d2d',
               borderRadius: '2px',
               overflow: 'hidden'
             }}>
               <div style={{
-                width: '100%',
+                width: downloadProgress ? `${downloadProgress.percentage}%` : '100%',
                 height: '100%',
-                backgroundColor: '#007acc',
-                animation: 'pulse 1.5s ease-in-out infinite'
+                backgroundColor: '#007aff',
+                transition: 'width 0.3s ease',
+                animation: downloadProgress ? 'none' : 'pulse 1.5s ease-in-out infinite'
               }} />
             </div>
+            {downloadProgress && downloadProgress.contentLength > 0 && (
+              <div style={{ 
+                marginTop: '4px', 
+                fontSize: '10px', 
+                color: '#a0a0a0',
+                display: 'flex',
+                justifyContent: 'space-between'
+              }}>
+                <span>{downloadProgress.percentage}%</span>
+                <span>
+                  {(downloadProgress.downloaded / 1024 / 1024).toFixed(1)}MB / {(downloadProgress.contentLength / 1024 / 1024).toFixed(1)}MB
+                </span>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -110,27 +156,33 @@ export function UpdateChecker() {
         zIndex: 1000
       }}>
         <div style={{
-          backgroundColor: 'white',
-          padding: '20px',
+          backgroundColor: '#1e1e1e',
+          padding: '15px',
           borderRadius: '8px',
           textAlign: 'center',
-          maxWidth: '400px'
+          width: '280px',
+          maxHeight: '200px',
+          border: '1px solid #2d2d2d',
+          color: '#ffffff'
         }}>
-          <h3>Update Available</h3>
-          <p>
-            A new version <strong>{updateAvailable.version}</strong> is available. 
+          <h3 style={{ margin: '0 0 8px 0', color: '#ffffff', fontSize: '16px' }}>Update Available</h3>
+          <p style={{ color: '#e0e0e0', margin: '0 0 15px 0', fontSize: '12px', lineHeight: '1.4' }}>
+            A new version <strong style={{ color: '#ffffff' }}>{updateAvailable.version}</strong> is available. 
             Would you like to update now?
           </p>
-          <div style={{ marginTop: '20px', display: 'flex', gap: '10px', justifyContent: 'center' }}>
+          <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
             <button
               onClick={handleUpdate}
               style={{
-                backgroundColor: '#007acc',
+                backgroundColor: '#007aff',
                 color: 'white',
                 border: 'none',
-                padding: '10px 20px',
+                padding: '8px 16px',
                 borderRadius: '4px',
-                cursor: 'pointer'
+                cursor: 'pointer',
+                fontWeight: '500',
+                fontSize: '12px',
+                flex: 1
               }}
             >
               Update Now
@@ -138,12 +190,15 @@ export function UpdateChecker() {
             <button
               onClick={handleDismiss}
               style={{
-                backgroundColor: '#ccc',
-                color: 'black',
-                border: 'none',
-                padding: '10px 20px',
+                backgroundColor: '#2d2d2d',
+                color: '#e0e0e0',
+                border: '1px solid #3a3a3a',
+                padding: '8px 16px',
                 borderRadius: '4px',
-                cursor: 'pointer'
+                cursor: 'pointer',
+                fontWeight: '500',
+                fontSize: '12px',
+                flex: 1
               }}
             >
               Later
