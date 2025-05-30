@@ -135,6 +135,11 @@ fn check_and_translate_runners(command: &str, preferred_pm: &str) -> Option<Stri
         return Some(get_runner_command(preferred_pm, args));
     }
 
+    if command.starts_with("pnpm dlx ") && preferred_pm != "pnpm" {
+        let args = command.strip_prefix("pnpm dlx ").unwrap();
+        return Some(get_runner_command(preferred_pm, args));
+    }
+
     if command.starts_with("bunx ") && preferred_pm != "bun" {
         let args = command.strip_prefix("bunx ").unwrap();
         return Some(get_runner_command(preferred_pm, args));
@@ -346,4 +351,92 @@ fn set_clipboard_content(_content: &str) -> Result<(), Box<dyn std::error::Error
 #[tauri::command]
 pub fn quit_app(app_handle: AppHandle) {
     app_handle.exit(0);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_pnpm_dlx_conversion() {
+        // Test pnpm dlx -> other package managers
+        assert_eq!(
+            check_and_translate_runners("pnpm dlx create-next-app", "npm"),
+            Some("npx create-next-app".to_string())
+        );
+        assert_eq!(
+            check_and_translate_runners("pnpm dlx create-next-app", "yarn"),
+            Some("yarn dlx create-next-app".to_string())
+        );
+        assert_eq!(
+            check_and_translate_runners("pnpm dlx create-next-app", "bun"),
+            Some("bunx create-next-app".to_string())
+        );
+
+        // Test that pnpm dlx stays unchanged when preferred PM is pnpm
+        assert_eq!(
+            check_and_translate_runners("pnpx create-next-app", "pnpm"),
+            None
+        );
+    }
+
+    #[test]
+    fn test_pnpx_conversion() {
+        // Test pnpx -> other package managers
+        assert_eq!(
+            check_and_translate_runners("pnpx create-next-app", "npm"),
+            Some("npx create-next-app".to_string())
+        );
+        assert_eq!(
+            check_and_translate_runners("pnpx create-next-app", "yarn"),
+            Some("yarn dlx create-next-app".to_string())
+        );
+        assert_eq!(
+            check_and_translate_runners("pnpx create-next-app", "bun"),
+            Some("bunx create-next-app".to_string())
+        );
+
+        // Test that pnpx stays unchanged when preferred PM is pnpm
+        assert_eq!(
+            check_and_translate_runners("pnpx create-next-app", "pnpm"),
+            None
+        );
+    }
+
+    #[test]
+    fn test_other_runners_to_pnpm() {
+        // Test that other runners convert to pnpm dlx (not pnpx)
+        assert_eq!(
+            check_and_translate_runners("npx create-next-app", "pnpm"),
+            Some("pnpx create-next-app".to_string())
+        );
+        assert_eq!(
+            check_and_translate_runners("bunx create-next-app", "pnpm"),
+            Some("pnpx create-next-app".to_string())
+        );
+        assert_eq!(
+            check_and_translate_runners("yarn dlx create-next-app", "pnpm"),
+            Some("pnpx create-next-app".to_string())
+        );
+    }
+
+    #[test]
+    fn test_get_runner_command() {
+        assert_eq!(
+            get_runner_command("npm", "create-next-app"),
+            "npx create-next-app"
+        );
+        assert_eq!(
+            get_runner_command("pnpm", "create-next-app"),
+            "pnpx create-next-app"
+        );
+        assert_eq!(
+            get_runner_command("yarn", "create-next-app"),
+            "yarn dlx create-next-app"
+        );
+        assert_eq!(
+            get_runner_command("bun", "create-next-app"),
+            "bunx create-next-app"
+        );
+    }
 }

@@ -6,7 +6,7 @@ A macOS menubar app that automatically translates package manager commands betwe
 
 - 🔄 **Automatic Command Translation** - Copy any package manager command and it gets instantly translated to your preferred package manager
 - 📦 **Universal Support** - Works with npm, pnpm, yarn, and bun
-- 🏃‍♂️ **Runner Commands** - Supports npx, pnpx, bunx, and yarn dlx
+- 🏃‍♂️ **Runner Commands** - Supports npx, pnpx, pnpm dlx, bunx, and yarn dlx
 - ⚡ **Real-time Monitoring** - Monitors your clipboard automatically
 - 🎯 **Smart Translation** - Handles global installs, script commands, and package manager specific syntax
 - 🖥️ **Native macOS Design** - Clean, minimal menubar interface
@@ -23,6 +23,8 @@ A macOS menubar app that automatically translates package manager commands betwe
 |------------------|----------------|----------------|----------------|
 | `npm install react` | `pnpm add react` | `yarn add react` | `bun add react` |
 | `npx create-react-app` | `pnpx create-react-app` | `yarn dlx create-react-app` | `bunx create-react-app` |
+| `pnpx create-next-app` | `pnpx create-next-app` | `yarn dlx create-next-app` | `bunx create-next-app` |
+| `pnpm dlx create-next-app` | `pnpm dlx create-next-app` | `yarn dlx create-next-app` | `bunx create-next-app` |
 | `yarn build` | `pnpm run build` | `yarn build` | `bun run build` |
 | `bun install -g typescript` | `pnpm add -g typescript` | `yarn global add typescript` | `bun add -g typescript` |
 | `bunx prisma generate` | `pnpx prisma generate` | `yarn dlx prisma generate` | `npx prisma generate` |
@@ -63,7 +65,7 @@ Download the latest release from the [Releases page](https://github.com/MartinPT
 - **Package Management**: `install`, `add`, `uninstall`, `remove`
 - **Script Running**: `run`, `start`, `build`, `test`, `dev`
 - **Global Installs**: `-g`, `--global`
-- **Package Runners**: `npx`, `pnpx`, `bunx`, `yarn dlx`
+- **Package Runners**: `npx`, `pnpx`, `pnpm dlx`, `bunx`, `yarn dlx`
 
 ## Requirements
 
