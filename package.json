@@ -1,13 +1,16 @@
 {
   "name": "packswitcher",
   "private": true,
-  "version": "1.1.2",
+  "version": "1.1.4",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "pnpm run sync-version && tsc && vite build",
     "preview": "vite preview",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "sync-version": "node scripts/sync-version.js",
+    "version": "pnpm run sync-version",
+    "postversion": "pnpm run sync-version"
   },
   "dependencies": {
     "@tauri-apps/api": "2.5.0",
