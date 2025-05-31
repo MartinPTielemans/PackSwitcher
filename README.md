@@ -74,7 +74,7 @@ Download the latest release from the [Releases page](https://github.com/MartinPT
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) for details.
+MIT License - see [LICENSE](LICENSE.md) for details.
 
 ## Contributing
 
