@@ -4,3 +4,4 @@ src-tauri/target
 .git
 pnpm-lock.yaml
 *.md 
+gen
