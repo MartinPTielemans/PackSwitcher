@@ -51,4 +51,4 @@ jobs:
           includeUpdaterJson: true # Enable updater JSON generation
           updaterJsonPreferNsis: true # Prefer NSIS installer for Windows updater
           updaterJsonKeepUniversal: false # Don't keep universal macOS builds separate
-          args: '--target aarch64-apple-darwin' 
+          args: '--target aarch64-apple-darwin'
