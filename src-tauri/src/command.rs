@@ -61,15 +61,24 @@ impl ClipboardHandler for ClipboardMonitor {
             if current_clipboard != self.last_clipboard && !current_clipboard.is_empty() {
                 if let Some(translated) = translate_command(&current_clipboard) {
                     // Update clipboard with translated command
-                    if self.clipboard_ctx.set_text(translated.clone()).is_ok() {
-                        // Emit event to frontend
-                        let _ = self.app_handle.emit(
-                            "command-translated",
-                            TranslationEvent {
-                                original: current_clipboard.clone(),
-                                translated: translated.clone(),
-                            },
-                        );
+                    match self.clipboard_ctx.set_text(translated.clone()) {
+                        Ok(_) => {
+                            // Emit event to frontend
+                            let _ = self.app_handle.emit(
+                                "command-translated",
+                                TranslationEvent {
+                                    original: current_clipboard.clone(),
+                                    translated: translated.clone(),
+                                },
+                            );
+                        }
+                        Err(e) => {
+                            eprintln!(
+                                "Failed to update clipboard with translated text: {}. Error: {}",
+                                translated.clone(),
+                                e
+                            );
+                        }
                     }
                 }
                 self.last_clipboard = current_clipboard;
