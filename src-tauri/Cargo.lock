@@ -1451,7 +1451,7 @@ dependencies = [
  "js-sys",
  "log",
  "wasm-bindgen",
- "windows-core 0.61.2",
+ "windows-core 0.59.0",
 ]
 
 [[package]]
@@ -3769,7 +3769,7 @@ dependencies = [
 [[package]]
 name = "tauri-nspanel"
 version = "2.0.1"
-source = "git+https://github.com/ahkohd/tauri-nspanel?branch=v2#d4b9df797959f8fa4701e8a20ff69d9605bb66e9"
+source = "git+https://github.com/ahkohd/tauri-nspanel?branch=v2#dc1563b2c71d3699dc67028080e43aade0575bcf"
 dependencies = [
  "bitflags 2.9.1",
  "block",
