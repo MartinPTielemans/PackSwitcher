@@ -7,7 +7,6 @@ mod tray;
 
 use std::time::Duration;
 use tauri::{Emitter, Manager};
-use tokio;
 
 fn main() {
     tauri::Builder::default()
@@ -29,7 +28,7 @@ fn main() {
 
             let app_handle = app.app_handle();
 
-            tray::create(&app_handle)?;
+            tray::create(app_handle)?;
 
             // Check for updates on startup
             let app_handle_clone = app_handle.clone();

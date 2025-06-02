@@ -1,10 +1,10 @@
 use std::collections::HashMap;
+use std::sync::Mutex;
 use std::sync::Once;
-use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
 
-use tauri::{AppHandle, Emitter, Manager};
+use tauri::{AppHandle, Emitter};
 use tauri_nspanel::ManagerExt;
 
 use crate::fns::{

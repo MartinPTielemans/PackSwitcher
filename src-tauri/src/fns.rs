@@ -1,3 +1,6 @@
+#![allow(deprecated)]
+#![allow(unexpected_cfgs)]
+
 use std::ffi::CString;
 
 use tauri::{AppHandle, Emitter, Listener, Manager, WebviewWindow};

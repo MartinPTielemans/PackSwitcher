@@ -1,42 +1,42 @@
-import { useEffect, useState } from "react";
-import { invoke } from "@tauri-apps/api/core";
-import { UpdateChecker } from "./UpdateChecker";
+import { useEffect, useState } from 'react'
+import { invoke } from '@tauri-apps/api/core'
+import { UpdateChecker } from './UpdateChecker'
 
-import "./App.css";
+import './App.css'
 
-type PackageManager = 'npm' | 'pnpm' | 'yarn' | 'bun';
+type PackageManager = 'npm' | 'pnpm' | 'yarn' | 'bun'
 
 function App() {
-  const [selectedPM, setSelectedPM] = useState<PackageManager>('npm');
-  const [isMonitoring, setIsMonitoring] = useState(false);
+  const [selectedPM, setSelectedPM] = useState<PackageManager>('npm')
+  const [isMonitoring, setIsMonitoring] = useState(false)
 
   useEffect(() => {
-    invoke("init");
-    
-    // Load saved preferences
-    invoke("get_preferred_package_manager").then((pm: any) => {
-      if (pm) setSelectedPM(pm);
-    });
+    invoke('init')
 
-    invoke("get_monitoring_state").then((state: any) => {
-      setIsMonitoring(state);
-    });
-  }, []);
+    // Load saved preferences
+    invoke<PackageManager>('get_preferred_package_manager').then(pm => {
+      if (pm) setSelectedPM(pm)
+    })
+
+    invoke<boolean>('get_monitoring_state').then(state => {
+      setIsMonitoring(state)
+    })
+  }, [])
 
   const handlePMChange = async (pm: PackageManager) => {
-    setSelectedPM(pm);
-    await invoke("set_preferred_package_manager", { packageManager: pm });
-  };
+    setSelectedPM(pm)
+    await invoke('set_preferred_package_manager', { packageManager: pm })
+  }
 
   const toggleMonitoring = async () => {
-    const newState = !isMonitoring;
-    setIsMonitoring(newState);
-    await invoke("toggle_monitoring", { enabled: newState });
-  };
+    const newState = !isMonitoring
+    setIsMonitoring(newState)
+    await invoke('toggle_monitoring', { enabled: newState })
+  }
 
   const handleQuit = async () => {
-    await invoke("quit_app");
-  };
+    await invoke('quit_app')
+  }
 
   return (
     <>
@@ -46,12 +46,18 @@ function App() {
           <h1>📦 Package Manager Switcher</h1>
           <div className="header-controls">
             <div className="status">
-              <span className={`indicator ${isMonitoring ? 'active' : 'inactive'}`}>
+              <span
+                className={`indicator ${isMonitoring ? 'active' : 'inactive'}`}
+              >
                 {isMonitoring ? '🟢' : '🔴'}
               </span>
               <span>{isMonitoring ? 'Monitoring' : 'Stopped'}</span>
             </div>
-            <button className="quit-button" onClick={handleQuit} title="Quit Application">
+            <button
+              className="quit-button"
+              onClick={handleQuit}
+              title="Quit Application"
+            >
               ✕
             </button>
           </div>
@@ -73,7 +79,7 @@ function App() {
             </div>
           </div>
 
-          <button 
+          <button
             className={`monitor-toggle ${isMonitoring ? 'stop' : 'start'}`}
             onClick={toggleMonitoring}
           >
@@ -82,7 +88,7 @@ function App() {
         </div>
       </div>
     </>
-  );
+  )
 }
 
-export default App;
+export default App
