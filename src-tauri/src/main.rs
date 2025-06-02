@@ -7,7 +7,6 @@ mod tray;
 
 use std::time::Duration;
 use tauri::{Emitter, Manager};
-use tokio;
 
 fn main() {
     tauri::Builder::default()
