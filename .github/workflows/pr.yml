@@ -64,9 +64,6 @@ jobs:
           - platform: 'macos-latest'
             args: '--target aarch64-apple-darwin'
             target: 'aarch64-apple-darwin'
-          - platform: 'macos-latest'
-            args: '--target x86_64-apple-darwin'
-            target: 'x86_64-apple-darwin'
 
     runs-on: ${{ matrix.platform }}
     steps:
@@ -122,7 +119,7 @@ jobs:
 
   lint-rust:
     name: 'Lint Rust Code'
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -144,7 +141,7 @@ jobs:
 
   security-audit:
     name: 'Security Audit'
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
 
