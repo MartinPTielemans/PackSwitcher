@@ -2,8 +2,11 @@ use std::collections::HashMap;
 use std::sync::Mutex;
 use std::sync::Once;
 use std::thread;
-use std::time::Duration;
 
+use clipboard_rs::{
+    Clipboard, ClipboardContext, ClipboardHandler, ClipboardWatcher, ClipboardWatcherContext,
+    WatcherShutdown,
+};
 use tauri::{AppHandle, Emitter};
 use tauri_nspanel::ManagerExt;
 
@@ -16,11 +19,63 @@ static INIT: Once = Once::new();
 // Global state for clipboard monitoring
 static CLIPBOARD_MONITORING: Mutex<bool> = Mutex::new(false);
 static PREFERRED_PM: Mutex<String> = Mutex::new(String::new());
+static CLIPBOARD_SHUTDOWN: Mutex<Option<WatcherShutdown>> = Mutex::new(None);
 
 #[derive(Clone, serde::Serialize)]
 struct TranslationEvent {
     original: String,
     translated: String,
+}
+
+// Clipboard handler for event-driven monitoring
+struct ClipboardMonitor {
+    app_handle: AppHandle,
+    clipboard_ctx: ClipboardContext,
+    last_clipboard: String,
+}
+
+impl ClipboardMonitor {
+    fn new(app_handle: AppHandle) -> Result<Self, String> {
+        let clipboard_ctx = ClipboardContext::new()
+            .map_err(|e| format!("Failed to create clipboard context: {}", e))?;
+        Ok(ClipboardMonitor {
+            app_handle,
+            clipboard_ctx,
+            last_clipboard: String::new(),
+        })
+    }
+}
+
+impl ClipboardHandler for ClipboardMonitor {
+    fn on_clipboard_change(&mut self) {
+        // Check if monitoring is still enabled
+        {
+            let monitoring = CLIPBOARD_MONITORING.lock().unwrap();
+            if !*monitoring {
+                return;
+            }
+        }
+
+        // Get clipboard content using the new clipboard-rs API
+        if let Ok(current_clipboard) = self.clipboard_ctx.get_text() {
+            if current_clipboard != self.last_clipboard && !current_clipboard.is_empty() {
+                if let Some(translated) = translate_command(&current_clipboard) {
+                    // Update clipboard with translated command
+                    if self.clipboard_ctx.set_text(translated.clone()).is_ok() {
+                        // Emit event to frontend
+                        let _ = self.app_handle.emit(
+                            "command-translated",
+                            TranslationEvent {
+                                original: current_clipboard.clone(),
+                                translated: translated.clone(),
+                            },
+                        );
+                    }
+                }
+                self.last_clipboard = current_clipboard;
+            }
+        }
+    }
 }
 
 #[tauri::command]
@@ -63,48 +118,48 @@ pub fn toggle_monitoring(app_handle: AppHandle, enabled: bool) -> Result<(), Str
     *monitoring = enabled;
 
     if enabled {
-        start_clipboard_monitoring(app_handle);
+        start_clipboard_monitoring(app_handle)?;
+    } else {
+        stop_clipboard_monitoring();
     }
 
     Ok(())
 }
 
-fn start_clipboard_monitoring(app_handle: AppHandle) {
+fn start_clipboard_monitoring(app_handle: AppHandle) -> Result<(), String> {
+    // Stop any existing monitoring
+    stop_clipboard_monitoring();
+
+    // Create the clipboard monitor
+    let monitor = ClipboardMonitor::new(app_handle)?;
+
+    // Create the watcher context
+    let mut watcher_ctx = ClipboardWatcherContext::new()
+        .map_err(|e| format!("Failed to create clipboard watcher: {}", e))?;
+
+    // Add the monitor as a handler and get the shutdown channel
+    let shutdown = watcher_ctx.add_handler(monitor).get_shutdown_channel();
+
+    // Store the shutdown channel
+    {
+        let mut clipboard_shutdown = CLIPBOARD_SHUTDOWN.lock().unwrap();
+        *clipboard_shutdown = Some(shutdown);
+    }
+
+    // Start watching in a separate thread
     thread::spawn(move || {
-        let mut last_clipboard = String::new();
-
-        loop {
-            // Check if monitoring is still enabled
-            {
-                let monitoring = CLIPBOARD_MONITORING.lock().unwrap();
-                if !*monitoring {
-                    break;
-                }
-            }
-
-            // Check clipboard content
-            if let Ok(current_clipboard) = get_clipboard_content() {
-                if current_clipboard != last_clipboard && !current_clipboard.is_empty() {
-                    if let Some(translated) = translate_command(&current_clipboard) {
-                        // Update clipboard with translated command
-                        if set_clipboard_content(&translated).is_ok() {
-                            // Emit event to frontend
-                            let _ = app_handle.emit(
-                                "command-translated",
-                                TranslationEvent {
-                                    original: current_clipboard.clone(),
-                                    translated: translated.clone(),
-                                },
-                            );
-                        }
-                    }
-                    last_clipboard = current_clipboard;
-                }
-            }
-
-            thread::sleep(Duration::from_millis(500));
-        }
+        watcher_ctx.start_watch();
     });
+
+    Ok(())
+}
+
+fn stop_clipboard_monitoring() {
+    // Stop the clipboard watcher using the shutdown channel
+    let mut clipboard_shutdown = CLIPBOARD_SHUTDOWN.lock().unwrap();
+    if let Some(shutdown) = clipboard_shutdown.take() {
+        shutdown.stop();
+    }
 }
 
 fn translate_command(command: &str) -> Option<String> {
@@ -311,41 +366,6 @@ fn create_translation_mappings() -> HashMap<String, HashMap<String, String>> {
     translations.insert("bun".to_string(), bun_map);
 
     translations
-}
-
-#[cfg(target_os = "macos")]
-fn get_clipboard_content() -> Result<String, Box<dyn std::error::Error>> {
-    use std::process::Command;
-
-    let output = Command::new("pbpaste").output()?;
-    Ok(String::from_utf8_lossy(&output.stdout).to_string())
-}
-
-#[cfg(target_os = "macos")]
-fn set_clipboard_content(content: &str) -> Result<(), Box<dyn std::error::Error>> {
-    use std::io::Write;
-    use std::process::{Command, Stdio};
-
-    let mut child = Command::new("pbcopy").stdin(Stdio::piped()).spawn()?;
-
-    if let Some(stdin) = child.stdin.as_mut() {
-        stdin.write_all(content.as_bytes())?;
-    }
-
-    child.wait()?;
-    Ok(())
-}
-
-#[cfg(not(target_os = "macos"))]
-fn get_clipboard_content() -> Result<String, Box<dyn std::error::Error>> {
-    // Placeholder for other platforms
-    Ok(String::new())
-}
-
-#[cfg(not(target_os = "macos"))]
-fn set_clipboard_content(_content: &str) -> Result<(), Box<dyn std::error::Error>> {
-    // Placeholder for other platforms
-    Ok(())
 }
 
 #[tauri::command]
