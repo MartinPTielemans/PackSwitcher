@@ -468,4 +468,258 @@ mod tests {
             "bunx create-next-app"
         );
     }
+
+    // New comprehensive tests for package manager translations
+    #[test]
+    fn test_npm_install_translations() {
+        let translations = create_translation_mappings();
+        
+        // npm install -> add for other package managers
+        assert_eq!(
+            translate_to_preferred_pm("npm install react", "npm", "pnpm", &translations),
+            Some("pnpm add react".to_string())
+        );
+        assert_eq!(
+            translate_to_preferred_pm("npm install react", "npm", "yarn", &translations),
+            Some("yarn add react".to_string())
+        );
+        assert_eq!(
+            translate_to_preferred_pm("npm install react", "npm", "bun", &translations),
+            Some("bun add react".to_string())
+        );
+
+        // npm i (shorthand) -> add
+        assert_eq!(
+            translate_to_preferred_pm("npm i react", "npm", "pnpm", &translations),
+            Some("pnpm add react".to_string())
+        );
+    }
+
+    #[test]
+    fn test_npm_uninstall_translations() {
+        let translations = create_translation_mappings();
+        
+        // npm uninstall -> remove for other package managers
+        assert_eq!(
+            translate_to_preferred_pm("npm uninstall react", "npm", "pnpm", &translations),
+            Some("pnpm remove react".to_string())
+        );
+        assert_eq!(
+            translate_to_preferred_pm("npm uninstall react", "npm", "yarn", &translations),
+            Some("yarn remove react".to_string())
+        );
+        assert_eq!(
+            translate_to_preferred_pm("npm uninstall react", "npm", "bun", &translations),
+            Some("bun remove react".to_string())
+        );
+    }
+
+    #[test]
+    fn test_pnpm_add_translations() {
+        let translations = create_translation_mappings();
+        
+        // pnpm add -> install for npm
+        assert_eq!(
+            translate_to_preferred_pm("pnpm add react", "pnpm", "npm", &translations),
+            Some("npm install react".to_string())
+        );
+        
+        // pnpm add -> add for other package managers
+        assert_eq!(
+            translate_to_preferred_pm("pnpm add react", "pnpm", "yarn", &translations),
+            Some("yarn add react".to_string())
+        );
+        assert_eq!(
+            translate_to_preferred_pm("pnpm add react", "pnpm", "bun", &translations),
+            Some("bun add react".to_string())
+        );
+    }
+
+    #[test]
+    fn test_yarn_add_translations() {
+        let translations = create_translation_mappings();
+        
+        // yarn add -> install for npm
+        assert_eq!(
+            translate_to_preferred_pm("yarn add react", "yarn", "npm", &translations),
+            Some("npm install react".to_string())
+        );
+        
+        // yarn add -> add for other package managers
+        assert_eq!(
+            translate_to_preferred_pm("yarn add react", "yarn", "pnpm", &translations),
+            Some("pnpm add react".to_string())
+        );
+        assert_eq!(
+            translate_to_preferred_pm("yarn add react", "yarn", "bun", &translations),
+            Some("bun add react".to_string())
+        );
+    }
+
+    #[test]
+    fn test_bun_add_translations() {
+        let translations = create_translation_mappings();
+        
+        // bun add -> install for npm
+        assert_eq!(
+            translate_to_preferred_pm("bun add react", "bun", "npm", &translations),
+            Some("npm install react".to_string())
+        );
+        
+        // bun add -> add for other package managers
+        assert_eq!(
+            translate_to_preferred_pm("bun add react", "bun", "pnpm", &translations),
+            Some("pnpm add react".to_string())
+        );
+        assert_eq!(
+            translate_to_preferred_pm("bun add react", "bun", "yarn", &translations),
+            Some("yarn add react".to_string())
+        );
+    }
+
+    #[test]
+    fn test_global_install_translations() {
+        let translations = create_translation_mappings();
+        
+        // npm install -g -> various global installs
+        assert_eq!(
+            translate_to_preferred_pm("npm install -g typescript", "npm", "pnpm", &translations),
+            Some("pnpm add -g typescript".to_string())
+        );
+        assert_eq!(
+            translate_to_preferred_pm("npm install -g typescript", "npm", "yarn", &translations),
+            Some("yarn global add typescript".to_string())
+        );
+        assert_eq!(
+            translate_to_preferred_pm("npm install -g typescript", "npm", "bun", &translations),
+            Some("bun add -g typescript".to_string())
+        );
+
+        // Test --global flag
+        assert_eq!(
+            translate_to_preferred_pm("npm install --global typescript", "npm", "pnpm", &translations),
+            Some("pnpm add -g typescript".to_string())
+        );
+
+        // Test global flag with no package name
+        assert_eq!(
+            translate_to_preferred_pm("npm install -g", "npm", "pnpm", &translations),
+            Some("pnpm add -g".to_string())
+        );
+    }
+
+    #[test]
+    fn test_script_running_translations() {
+        let translations = create_translation_mappings();
+        
+        // Regular script commands should add "run" for non-yarn package managers
+        assert_eq!(
+            translate_to_preferred_pm("yarn build", "yarn", "npm", &translations),
+            Some("npm run build".to_string())
+        );
+        assert_eq!(
+            translate_to_preferred_pm("yarn test", "yarn", "pnpm", &translations),
+            Some("pnpm run test".to_string())
+        );
+        assert_eq!(
+            translate_to_preferred_pm("yarn dev", "yarn", "bun", &translations),
+            Some("bun run dev".to_string())
+        );
+
+        // yarn -> yarn should keep the same format
+        assert_eq!(
+            translate_to_preferred_pm("yarn build", "yarn", "yarn", &translations),
+            Some("yarn build".to_string())
+        );
+    }
+
+    #[test]
+    fn test_script_commands_with_run() {
+        let translations = create_translation_mappings();
+        
+        // Commands that already have "run" should work correctly
+        assert_eq!(
+            translate_to_preferred_pm("npm run build", "npm", "pnpm", &translations),
+            Some("pnpm run build".to_string())
+        );
+        assert_eq!(
+            translate_to_preferred_pm("pnpm run test", "pnpm", "yarn", &translations),
+            Some("yarn run test".to_string())
+        );
+    }
+
+    #[test]
+    fn test_check_and_translate_package_managers() {
+        // Test the main translation entry point
+        assert_eq!(
+            check_and_translate_package_managers("npm install react", "pnpm"),
+            Some("pnpm add react".to_string())
+        );
+        assert_eq!(
+            check_and_translate_package_managers("yarn add typescript", "npm"),
+            Some("npm install typescript".to_string())
+        );
+        
+        // Should return None when source and target are the same
+        assert_eq!(
+            check_and_translate_package_managers("npm install react", "npm"),
+            None
+        );
+    }
+
+    #[test]
+    fn test_edge_cases() {
+        let translations = create_translation_mappings();
+        
+        // Empty args
+        assert_eq!(
+            translate_to_preferred_pm("npm install", "npm", "pnpm", &translations),
+            Some("pnpm add".to_string())
+        );
+        
+        // Single character commands should return None
+        assert_eq!(
+            translate_to_preferred_pm("npm", "npm", "pnpm", &translations),
+            None
+        );
+        
+        // Commands with multiple packages
+        assert_eq!(
+            translate_to_preferred_pm("npm install react react-dom", "npm", "pnpm", &translations),
+            Some("pnpm add react react-dom".to_string())
+        );
+    }
+
+    #[test]
+    fn test_translate_command_integration() {
+        // Test the main translate_command function with mocked state
+        {
+            let mut preferred_pm = PREFERRED_PM.lock().unwrap();
+            *preferred_pm = "pnpm".to_string();
+        }
+        
+        // Test runner translation
+        assert_eq!(
+            translate_command("npx create-react-app my-app"),
+            Some("pnpx create-react-app my-app".to_string())
+        );
+        
+        // Test package manager translation
+        assert_eq!(
+            translate_command("npm install lodash"),
+            Some("pnpm add lodash".to_string())
+        );
+        
+        // Test yarn script translation
+        assert_eq!(
+            translate_command("yarn build"),
+            Some("pnpm run build".to_string())
+        );
+        
+        // Should return None for commands that don't need translation
+        assert_eq!(
+            translate_command("pnpm add react"),
+            None
+        );
+    }
 }
