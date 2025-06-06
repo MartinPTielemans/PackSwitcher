@@ -31,7 +31,7 @@ function App(): React.JSX.Element {
   }, [])
 
   const handlePMChange: AsyncFunction<[PackageManager]> = async (
-    pm: PackageManager,
+    pm: PackageManager
   ): Promise<void> => {
     try {
       setSelectedPM(pm)
@@ -45,7 +45,7 @@ function App(): React.JSX.Element {
 
   const toggleMonitoring = async (): Promise<void> => {
     const newState = !isMonitoring
-    
+
     try {
       setIsMonitoring(newState)
       await invoke('set_monitoring_state', { enabled: newState })
@@ -93,15 +93,17 @@ function App(): React.JSX.Element {
           <div className="pm-selector">
             <label>Preferred Package Manager:</label>
             <div className="pm-buttons">
-              {(['npm', 'pnpm', 'yarn', 'bun'] as const).map((pm: PackageManager) => (
-                <button
-                  key={pm}
-                  className={`pm-button ${selectedPM === pm ? 'selected' : ''}`}
-                  onClick={() => handlePMChange(pm)}
-                >
-                  {pm}
-                </button>
-              ))}
+              {(['npm', 'pnpm', 'yarn', 'bun'] as const).map(
+                (pm: PackageManager) => (
+                  <button
+                    key={pm}
+                    className={`pm-button ${selectedPM === pm ? 'selected' : ''}`}
+                    onClick={() => handlePMChange(pm)}
+                  >
+                    {pm}
+                  </button>
+                )
+              )}
             </div>
           </div>
 

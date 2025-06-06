@@ -32,7 +32,7 @@ export interface UpdateProgressEvent {
 export class TauriError extends Error {
   constructor(
     message: string,
-    public readonly code?: string,
+    public readonly code?: string
   ) {
     super(message)
     this.name = 'TauriError'
@@ -42,4 +42,4 @@ export class TauriError extends Error {
 // Utility type for async functions
 export type AsyncFunction<T extends unknown[] = [], R = void> = (
   ...args: T
-) => Promise<R> 
+) => Promise<R>

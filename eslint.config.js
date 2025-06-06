@@ -9,7 +9,13 @@ import { fileURLToPath } from 'url'
 
 export default [
   {
-    ignores: ['dist', 'node_modules', 'src-tauri/target', 'vite.config.ts', 'eslint.config.js'],
+    ignores: [
+      'dist',
+      'node_modules',
+      'src-tauri/target',
+      'vite.config.ts',
+      'eslint.config.js',
+    ],
   },
   {
     files: ['src/**/*.{ts,tsx}'],
@@ -38,7 +44,7 @@ export default [
         'warn',
         { allowConstantExport: true },
       ],
-      
+
       // Strict TypeScript rules for better type safety
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/explicit-function-return-type': 'warn',

@@ -38,7 +38,9 @@ export function UpdateChecker(): React.JSX.Element | null {
           (event): void => {
             const { downloaded, contentLength } = event.payload
             const percentage =
-              contentLength > 0 ? Math.round((downloaded / contentLength) * 100) : 0
+              contentLength > 0
+                ? Math.round((downloaded / contentLength) * 100)
+                : 0
             setDownloadProgress({ downloaded, contentLength, percentage })
           }
         )
