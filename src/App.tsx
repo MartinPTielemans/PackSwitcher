@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react'
 import { invoke } from '@tauri-apps/api/core'
+import React, { useEffect, useState } from 'react'
 import { UpdateChecker } from './UpdateChecker'
-import type { PackageManager, AsyncFunction } from './types'
+import type { AsyncFunction, PackageManager } from './types'
 
 import './App.css'
 
@@ -48,7 +48,7 @@ function App(): React.JSX.Element {
 
     try {
       setIsMonitoring(newState)
-      await invoke('set_monitoring_state', { enabled: newState })
+      await invoke('toggle_monitoring', { enabled: newState })
     } catch (error) {
       console.error('Failed to toggle monitoring:', error)
       // Revert to the original state on error
