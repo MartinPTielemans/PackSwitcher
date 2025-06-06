@@ -27,7 +27,8 @@ export function UpdateChecker(): React.JSX.Element | null {
         const unlistenUpdate = await listen<UpdateAvailableEvent>(
           'update-available',
           (event): void => {
-            setUpdateAvailable({ version: event.payload.version })
+            // event.payload is a string (version), not an object
+            setUpdateAvailable({ version: event.payload })
             setShowDialog(true)
           }
         )
@@ -59,8 +60,13 @@ export function UpdateChecker(): React.JSX.Element | null {
 
     // Cleanup listeners on component unmount
     return (): void => {
+      // Handle cleanup functions properly - UnlistenFn returns void, not Promise
       cleanupFunctions.forEach((cleanup): void => {
-        cleanup()
+        try {
+          cleanup()
+        } catch (error) {
+          console.error('Error during cleanup:', error)
+        }
       })
     }
   }, [])

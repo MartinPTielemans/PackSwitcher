@@ -20,8 +20,8 @@ function App(): React.JSX.Element {
           setSelectedPM(pm)
         }
 
-        const state = await invoke<boolean>('get_monitoring_state')
-        setIsMonitoring(state)
+        const monitoringState = await invoke<boolean>('get_monitoring_state')
+        setIsMonitoring(monitoringState)
       } catch (error) {
         console.error('Failed to initialize app:', error)
       }
@@ -43,15 +43,16 @@ function App(): React.JSX.Element {
     }
   }
 
-  const toggleMonitoring: AsyncFunction = async (): Promise<void> => {
+  const toggleMonitoring = async (): Promise<void> => {
+    const newState = !isMonitoring
+    
     try {
-      const newState = !isMonitoring
       setIsMonitoring(newState)
-      await invoke('toggle_monitoring', { enabled: newState })
+      await invoke('set_monitoring_state', { enabled: newState })
     } catch (error) {
       console.error('Failed to toggle monitoring:', error)
-      // Revert the UI state if the backend call failed
-      setIsMonitoring(!isMonitoring)
+      // Revert to the original state on error
+      setIsMonitoring(isMonitoring)
     }
   }
 

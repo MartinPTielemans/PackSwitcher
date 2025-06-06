@@ -20,9 +20,8 @@ export interface TauriResponse<T> {
 }
 
 // Event payload types for Tauri listeners
-export interface UpdateAvailableEvent {
-  version: string
-}
+// Note: update-available event sends version as string payload, not object
+export type UpdateAvailableEvent = string
 
 export interface UpdateProgressEvent {
   downloaded: number
@@ -43,15 +42,4 @@ export class TauriError extends Error {
 // Utility type for async functions
 export type AsyncFunction<T extends unknown[] = [], R = void> = (
   ...args: T
-) => Promise<R>
-
-// Component prop types - defined for future extensibility
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export interface AppProps {
-  // Currently no props, but defined for future extensibility
-}
-
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export interface UpdateCheckerProps {
-  // Currently no props, but defined for future extensibility
-} 
+) => Promise<R> 
