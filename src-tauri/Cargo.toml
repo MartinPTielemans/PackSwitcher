@@ -1,6 +1,6 @@
 [package]
 name = "packswitcher"
-version = "1.1.6"
+version = "1.1.7"
 description = "A macOS menubar app that automatically translates package manager commands"
 authors = ["you@example.com"]
 license = "MIT"
