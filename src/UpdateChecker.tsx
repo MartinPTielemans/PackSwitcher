@@ -1,52 +1,57 @@
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { invoke } from '@tauri-apps/api/core'
-import { listen } from '@tauri-apps/api/event'
+import { listen, type UnlistenFn } from '@tauri-apps/api/event'
+import type {
+  UpdateInfo,
+  DownloadProgress,
+  UpdateAvailableEvent,
+  UpdateProgressEvent,
+  AsyncFunction,
+} from './types'
 
-interface UpdateInfo {
-  version: string
-}
-
-interface DownloadProgress {
-  downloaded: number
-  contentLength: number
-  percentage: number
-}
-
-export function UpdateChecker() {
+export function UpdateChecker(): React.JSX.Element | null {
   const [updateAvailable, setUpdateAvailable] = useState<UpdateInfo | null>(
     null
   )
-  const [isUpdating, setIsUpdating] = useState(false)
-  const [showDialog, setShowDialog] = useState(false)
+  const [isUpdating, setIsUpdating] = useState<boolean>(false)
+  const [showDialog, setShowDialog] = useState<boolean>(false)
   const [downloadProgress, setDownloadProgress] =
     useState<DownloadProgress | null>(null)
 
-  useEffect(() => {
+  useEffect((): (() => void) => {
+    let cleanupFunctions: UnlistenFn[] = []
+
     // Listen for update events from the backend
-    const setupListeners = async () => {
-      const unlistenUpdate = listen<string>('update-available', event => {
-        setUpdateAvailable({ version: event.payload })
-        setShowDialog(true)
-      })
+    const setupListeners = async (): Promise<void> => {
+      try {
+        const unlistenUpdate = await listen<UpdateAvailableEvent>(
+          'update-available',
+          (event): void => {
+            // event.payload is a string (version), not an object
+            setUpdateAvailable({ version: event.payload })
+            setShowDialog(true)
+          }
+        )
 
-      const unlistenProgress = listen<{
-        downloaded: number
-        contentLength: number
-      }>('update-progress', event => {
-        const { downloaded, contentLength } = event.payload
-        const percentage =
-          contentLength > 0 ? Math.round((downloaded / contentLength) * 100) : 0
-        setDownloadProgress({ downloaded, contentLength, percentage })
-      })
+        const unlistenProgress = await listen<UpdateProgressEvent>(
+          'update-progress',
+          (event): void => {
+            const { downloaded, contentLength } = event.payload
+            const percentage =
+              contentLength > 0
+                ? Math.round((downloaded / contentLength) * 100)
+                : 0
+            setDownloadProgress({ downloaded, contentLength, percentage })
+          }
+        )
 
-      const unlistenFinished = listen('update-finished', () => {
-        console.log('Update installation finished')
-      })
+        const unlistenFinished = await listen('update-finished', (): void => {
+          console.log('Update installation finished')
+        })
 
-      return async () => {
-        ;(await unlistenUpdate)()
-        ;(await unlistenProgress)()
-        ;(await unlistenFinished)()
+        cleanupFunctions = [unlistenUpdate, unlistenProgress, unlistenFinished]
+      } catch (error) {
+        console.error('Failed to setup update listeners:', error)
       }
     }
 
@@ -54,9 +59,21 @@ export function UpdateChecker() {
 
     // Check for updates on component mount
     checkForUpdates()
+
+    // Cleanup listeners on component unmount
+    return (): void => {
+      // Handle cleanup functions properly - UnlistenFn returns void, not Promise
+      cleanupFunctions.forEach((cleanup): void => {
+        try {
+          cleanup()
+        } catch (error) {
+          console.error('Error during cleanup:', error)
+        }
+      })
+    }
   }, [])
 
-  const checkForUpdates = async () => {
+  const checkForUpdates: AsyncFunction = async (): Promise<void> => {
     try {
       await invoke('check_for_updates')
     } catch (error) {
@@ -64,7 +81,7 @@ export function UpdateChecker() {
     }
   }
 
-  const handleUpdate = async () => {
+  const handleUpdate: AsyncFunction = async (): Promise<void> => {
     try {
       setIsUpdating(true)
       setShowDialog(false)
@@ -77,7 +94,7 @@ export function UpdateChecker() {
     }
   }
 
-  const handleDismiss = () => {
+  const handleDismiss = (): void => {
     setShowDialog(false)
     setUpdateAvailable(null)
   }

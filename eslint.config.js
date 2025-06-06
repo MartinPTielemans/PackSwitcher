@@ -4,13 +4,21 @@ import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
 import tseslint from '@typescript-eslint/eslint-plugin'
 import tsparser from '@typescript-eslint/parser'
+import path from 'path'
+import { fileURLToPath } from 'url'
 
 export default [
   {
-    ignores: ['dist', 'node_modules', 'src-tauri/target'],
+    ignores: [
+      'dist',
+      'node_modules',
+      'src-tauri/target',
+      'vite.config.ts',
+      'eslint.config.js',
+    ],
   },
   {
-    files: ['**/*.{ts,tsx}'],
+    files: ['src/**/*.{ts,tsx}'],
     languageOptions: {
       ecmaVersion: 2020,
       globals: globals.browser,
@@ -19,6 +27,8 @@ export default [
         ecmaVersion: 'latest',
         ecmaFeatures: { jsx: true },
         sourceType: 'module',
+        project: './tsconfig.json',
+        tsconfigRootDir: path.dirname(fileURLToPath(import.meta.url)),
       },
     },
     plugins: {
@@ -34,13 +44,16 @@ export default [
         'warn',
         { allowConstantExport: true },
       ],
-      '@typescript-eslint/no-unused-vars': [
-        'error',
-        { argsIgnorePattern: '^_' },
-      ],
-      '@typescript-eslint/explicit-function-return-type': 'off',
-      '@typescript-eslint/explicit-module-boundary-types': 'off',
-      '@typescript-eslint/no-explicit-any': 'warn',
+
+      // Strict TypeScript rules for better type safety
+      '@typescript-eslint/no-explicit-any': 'error',
+      '@typescript-eslint/explicit-function-return-type': 'warn',
+      '@typescript-eslint/no-unused-vars': 'error',
+      '@typescript-eslint/no-empty-interface': 'warn',
+      '@typescript-eslint/prefer-nullish-coalescing': 'error',
+      '@typescript-eslint/prefer-optional-chain': 'error',
+      '@typescript-eslint/no-unnecessary-type-assertion': 'error',
+      '@typescript-eslint/no-non-null-assertion': 'warn',
     },
   },
 ]

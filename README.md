@@ -72,6 +72,101 @@ Download the latest release from the [Releases page](https://github.com/MartinPT
 - macOS 10.15 or later
 - Clipboard access permission
 
+## Development
+
+### Prerequisites
+
+- [Node.js](https://nodejs.org/) (LTS version)
+- [pnpm](https://pnpm.io/) package manager
+- [Rust](https://rustup.rs/) toolchain
+
+### Setup
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/MartinPTielemans/PackSwitcher.git
+   cd PackSwitcher
+   ```
+
+2. Install dependencies:
+   ```bash
+   pnpm install
+   ```
+
+3. Start the development server:
+   ```bash
+   pnpm tauri dev
+   ```
+
+### Code Quality & Formatting
+
+This project uses automated code formatting and linting to maintain consistent code quality.
+
+#### Automatic Formatting
+
+The project is configured with:
+- **Prettier** for code formatting
+- **ESLint** for code linting
+- **TypeScript** strict mode for type safety
+- **Pre-commit hooks** to automatically format and lint staged files
+
+#### Available Scripts
+
+| Command | Description |
+|---------|-------------|
+| `pnpm run format` | Format all files with Prettier |
+| `pnpm run format:check` | Check if all files are properly formatted |
+| `pnpm run lint` | Run ESLint to check for issues |
+| `pnpm run lint:fix` | Run ESLint and fix auto-fixable issues |
+| `pnpm run type-check` | Run TypeScript type checking |
+| `pnpm run check` | Run all checks (formatting, linting, type checking) |
+| `pnpm run fix` | Fix all auto-fixable issues (formatting + linting) |
+| `pnpm run ci` | Run full CI pipeline locally |
+
+#### Pre-commit Hooks
+
+The project uses [Husky](https://typicode.github.io/husky/) and [lint-staged](https://github.com/okonet/lint-staged) to automatically format and lint your code before commits:
+
+- **Prettier** formats TypeScript, JavaScript, JSON, and Markdown files
+- **ESLint** fixes auto-fixable linting issues
+- Only staged files are processed for faster commits
+
+#### IDE Setup
+
+For the best development experience, we recommend using VS Code with the following extensions (automatically suggested when you open the project):
+
+- **Prettier** - Code formatter
+- **ESLint** - JavaScript/TypeScript linter
+- **Tauri** - Tauri framework support
+- **Rust Analyzer** - Rust language support
+- **EditorConfig** - Consistent editor settings
+
+The project includes VS Code settings that automatically:
+- Format code on save
+- Fix ESLint issues on save
+- Organize imports on save
+
+#### CI/CD
+
+The GitHub Actions workflow automatically checks:
+- ✅ Code formatting (Prettier)
+- ✅ Code linting (ESLint)
+- ✅ Type checking (TypeScript)
+- ✅ Build success
+- ✅ Rust code formatting and linting
+
+If any checks fail, the CI will provide helpful error messages with suggestions on how to fix the issues.
+
+### Building
+
+Build the application for production:
+
+```bash
+pnpm tauri build
+```
+
+This will create platform-specific installers in the `src-tauri/target/release/bundle/` directory.
+
 ## License
 
 MIT License - see [LICENSE](LICENSE.md) for details.

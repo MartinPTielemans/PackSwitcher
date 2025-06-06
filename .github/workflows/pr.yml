@@ -43,17 +43,43 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Check formatting
-        run: pnpm run format:check
+      - name: Check code formatting
+        run: |
+          echo "🎨 Checking code formatting with Prettier..."
+          if ! pnpm run format:check; then
+            echo "❌ Code formatting issues detected!"
+            echo "💡 Run 'pnpm run format' to fix formatting issues automatically"
+            echo "📋 Or run 'pnpm run fix' to fix both formatting and linting issues"
+            exit 1
+          fi
+          echo "✅ Code formatting is correct!"
 
       - name: Lint code
-        run: pnpm run lint
+        run: |
+          echo "🔍 Linting code with ESLint..."
+          if ! pnpm run lint; then
+            echo "❌ Linting issues detected!"
+            echo "💡 Run 'pnpm run lint:fix' to fix auto-fixable issues"
+            echo "📋 Or run 'pnpm run fix' to fix both formatting and linting issues"
+            exit 1
+          fi
+          echo "✅ Code linting passed!"
 
       - name: Type check
-        run: pnpm run type-check
+        run: |
+          echo "🔧 Type checking with TypeScript..."
+          if ! pnpm run type-check; then
+            echo "❌ TypeScript type checking failed!"
+            echo "💡 Fix type errors in your code"
+            exit 1
+          fi
+          echo "✅ TypeScript type checking passed!"
 
       - name: Build frontend
-        run: pnpm run build
+        run: |
+          echo "🏗️ Building frontend..."
+          pnpm run build
+          echo "✅ Frontend build successful!"
 
   test-tauri:
     name: 'Test Tauri Build'
