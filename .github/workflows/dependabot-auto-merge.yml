@@ -11,31 +11,96 @@ on:
 jobs:
   auto-merge:
     runs-on: ubuntu-latest
-    if: |
-      github.actor == 'dependabot[bot]' &&
-      github.event.pull_request.draft == false
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
+      # Get PR info for all event types
+      - name: Get PR for status/check events
+        if: github.event_name == 'status' || github.event_name == 'check_suite'
+        id: get-pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: prs } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              head: `${context.repo.owner}:${context.sha}`,
+              state: 'open'
+            });
+
+            if (prs.length === 0) {
+              console.log('No open PR found for this commit');
+              return null;
+            }
+
+            const pr = prs[0];
+            console.log(`Found PR #${pr.number}: ${pr.title}`);
+
+            return {
+              number: pr.number,
+              html_url: pr.html_url,
+              draft: pr.draft,
+              user: pr.user
+            };
+
+      # Check if this should run (Dependabot + not draft)
+      - name: Check if should run
+        id: should-run
+        run: |
+          # For pull_request events
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            if [ "${{ github.actor }}" = "dependabot[bot]" ] && [ "${{ github.event.pull_request.draft }}" = "false" ]; then
+              echo "should_run=true" >> $GITHUB_OUTPUT
+              echo "pr_number=${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
+              echo "pr_url=${{ github.event.pull_request.html_url }}" >> $GITHUB_OUTPUT
+            else
+              echo "should_run=false" >> $GITHUB_OUTPUT
+              echo "Skipping: actor=${{ github.actor }}, draft=${{ github.event.pull_request.draft }}"
+            fi
+          # For status/check_suite events
+          else
+            PR_INFO='${{ steps.get-pr.outputs.result }}'
+            if [ "$PR_INFO" = "null" ]; then
+              echo "should_run=false" >> $GITHUB_OUTPUT
+              echo "Skipping: No PR found for this commit"
+            else
+              ACTOR=$(echo "$PR_INFO" | jq -r '.user.login')
+              DRAFT=$(echo "$PR_INFO" | jq -r '.draft')
+              PR_NUMBER=$(echo "$PR_INFO" | jq -r '.number')
+              PR_URL=$(echo "$PR_INFO" | jq -r '.html_url')
+
+              if [ "$ACTOR" = "dependabot[bot]" ] && [ "$DRAFT" = "false" ]; then
+                echo "should_run=true" >> $GITHUB_OUTPUT
+                echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
+                echo "pr_url=$PR_URL" >> $GITHUB_OUTPUT
+              else
+                echo "should_run=false" >> $GITHUB_OUTPUT
+                echo "Skipping: actor=$ACTOR, draft=$DRAFT"
+              fi
+            fi
+          fi
+
       - name: Wait for CI checks to complete
+        if: steps.should-run.outputs.should_run == 'true'
         uses: fountainhead/action-wait-for-check@v1.2.0
         id: wait-for-checks
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           checkName: 'test-frontend,test-tauri,lint-rust,security-audit'
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           timeoutSeconds: 1800 # 30 minutes timeout
           intervalSeconds: 30
 
       - name: Check if all required checks passed
-        if: steps.wait-for-checks.outputs.conclusion == 'success'
+        if: steps.should-run.outputs.should_run == 'true' && steps.wait-for-checks.outputs.conclusion == 'success'
         run: |
           echo "✅ All CI checks passed! Proceeding with auto-merge."
 
       - name: Get Dependabot metadata
+        if: steps.should-run.outputs.should_run == 'true'
         id: metadata
         uses: dependabot/fetch-metadata@v2
         with:
@@ -43,6 +108,7 @@ jobs:
 
       - name: Auto-approve and merge minor/patch updates
         if: |
+          steps.should-run.outputs.should_run == 'true' &&
           steps.wait-for-checks.outputs.conclusion == 'success' &&
           (steps.metadata.outputs.update-type == 'version-update:semver-patch' ||
            steps.metadata.outputs.update-type == 'version-update:semver-minor')
@@ -51,11 +117,12 @@ jobs:
           gh pr review --approve "$PR_URL"
           gh pr merge --auto --squash "$PR_URL"
         env:
-          PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_URL: ${{ steps.should-run.outputs.pr_url }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Auto-approve major updates (but don't merge)
         if: |
+          steps.should-run.outputs.should_run == 'true' &&
           steps.wait-for-checks.outputs.conclusion == 'success' &&
           steps.metadata.outputs.update-type == 'version-update:semver-major'
         run: |
@@ -63,14 +130,14 @@ jobs:
           gh pr review --approve "$PR_URL"
           gh pr comment "$PR_URL" --body "✅ CI checks passed! This is a major version update, so it requires manual review before merging."
         env:
-          PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_URL: ${{ steps.should-run.outputs.pr_url }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Comment on CI failure
-        if: steps.wait-for-checks.outputs.conclusion != 'success'
+        if: steps.should-run.outputs.should_run == 'true' && steps.wait-for-checks.outputs.conclusion != 'success'
         run: |
           echo "❌ CI checks failed or timed out - not auto-merging"
           gh pr comment "$PR_URL" --body "❌ CI checks failed or timed out. Please review the failed checks before merging."
         env:
-          PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_URL: ${{ steps.should-run.outputs.pr_url }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
