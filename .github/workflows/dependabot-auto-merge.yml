@@ -3,14 +3,74 @@ name: Dependabot Auto-Merge
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
+  # Also trigger when status checks complete
+  status:
+  check_suite:
+    types: [completed]
 
 jobs:
   auto-merge:
     runs-on: ubuntu-latest
-    if: github.actor == 'dependabot[bot]'
+    if: |
+      github.actor == 'dependabot[bot]' &&
+      github.event.pull_request.draft == false
     steps:
-      - name: Enable auto-merge for Dependabot PRs
-        run: gh pr merge --auto --merge "$PR_URL"
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Wait for CI checks to complete
+        uses: fountainhead/action-wait-for-check@v1.2.0
+        id: wait-for-checks
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          checkName: 'test-frontend,test-tauri,lint-rust,security-audit'
+          ref: ${{ github.event.pull_request.head.sha }}
+          timeoutSeconds: 1800 # 30 minutes timeout
+          intervalSeconds: 30
+
+      - name: Check if all required checks passed
+        if: steps.wait-for-checks.outputs.conclusion == 'success'
+        run: |
+          echo "✅ All CI checks passed! Proceeding with auto-merge."
+
+      - name: Get Dependabot metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Auto-approve and merge minor/patch updates
+        if: |
+          steps.wait-for-checks.outputs.conclusion == 'success' &&
+          (steps.metadata.outputs.update-type == 'version-update:semver-patch' ||
+           steps.metadata.outputs.update-type == 'version-update:semver-minor')
+        run: |
+          echo "🔄 Auto-approving and merging ${{ steps.metadata.outputs.update-type }} update"
+          gh pr review --approve "$PR_URL"
+          gh pr merge --auto --squash "$PR_URL"
         env:
-          PR_URL: ${{github.event.pull_request.html_url}}
-          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Auto-approve major updates (but don't merge)
+        if: |
+          steps.wait-for-checks.outputs.conclusion == 'success' &&
+          steps.metadata.outputs.update-type == 'version-update:semver-major'
+        run: |
+          echo "⚠️ Major update detected - approving but requiring manual merge"
+          gh pr review --approve "$PR_URL"
+          gh pr comment "$PR_URL" --body "✅ CI checks passed! This is a major version update, so it requires manual review before merging."
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Comment on CI failure
+        if: steps.wait-for-checks.outputs.conclusion != 'success'
+        run: |
+          echo "❌ CI checks failed or timed out - not auto-merging"
+          gh pr comment "$PR_URL" --body "❌ CI checks failed or timed out. Please review the failed checks before merging."
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
