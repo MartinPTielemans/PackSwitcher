@@ -1,43 +1,28 @@
 version: 2
 updates:
-  # Enable version updates for npm (frontend dependencies)
+  # Enable version updates for Node.js dependencies
   - package-ecosystem: 'npm'
     directory: '/'
     schedule:
       interval: 'weekly'
-    open-pull-requests-limit: 10
-    reviewers:
-      - 'MartinPTielemans'
-    assignees:
-      - 'MartinPTielemans'
-    commit-message:
-      prefix: 'chore'
-      include: 'scope'
+    allow:
+      - dependency-type: 'all'
+    groups:
+      all:
+        patterns:
+          - '*'
+    ignore:
+      - dependency-name: 'eslint'
+        versions: ['>= 9']
 
-  # Enable version updates for Cargo (Rust dependencies)
+  # Enable version updates for rust
   - package-ecosystem: 'cargo'
     directory: '/src-tauri'
     schedule:
       interval: 'weekly'
-    open-pull-requests-limit: 10
-    reviewers:
-      - 'MartinPTielemans'
-    assignees:
-      - 'MartinPTielemans'
-    commit-message:
-      prefix: 'chore'
-      include: 'scope'
-
-  # Enable version updates for GitHub Actions
-  - package-ecosystem: 'github-actions'
-    directory: '/'
-    schedule:
-      interval: 'weekly'
-    open-pull-requests-limit: 5
-    reviewers:
-      - 'MartinPTielemans'
-    assignees:
-      - 'MartinPTielemans'
-    commit-message:
-      prefix: 'chore'
-      include: 'scope'
+    allow:
+      - dependency-type: 'all'
+    groups:
+      all:
+        patterns:
+          - '*'
